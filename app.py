@@ -6,6 +6,7 @@ import subprocess
 
 app = Flask(__name__)
 
+
 def html_maker(URL):
     #get url link here
     response = requests.get(URL)
@@ -19,14 +20,45 @@ def html_maker(URL):
     sample = soup.find('div',{'class':'sample-test'})
     inputsample = sample.find('div',{'class':'input'}).text
     outputsample = sample.find('div',{'class':'output'}).text
-    html = "<h2>" + qname + "</h2>" + "<h3>Problem Statement</h3>" + "<p>" + statement + "</p>" + "<h3>Input Format</h3>" + inputformat +  "<h3>Output Format</h3>" + outputformat + "<h3>Sample Input</h3><code>" + inputsample + "</code><h3>Sample Output</h3><code>" + outputsample + "</code>"
+    html = "<h2>" + qname + "</h2>" + "<h3>Problem Statement</h3>" + "<p>" + statement + "</p>" + "<h3>Input Format</h3>" + inputformat +  "<h3>Output Format</h3>" + outputformat + "<h3>Sample Input</h3><pre>" + inputsample + "</pre><h3>Sample Output</h3><pre>" + outputsample + "</pre>"
     html = html.replace("\le","<=")
     html = html.replace("$$$","")
     html = html.replace("\cdot","*")
     html = html.replace("\dots","...")
     html = html.replace("\sum","Summation")
-    print(html)
-    return jsonify({"html":html})
+    html = html.replace(u'\u2014',"-")
+    html = html.replace("\,",",")
+    return html
+
+def html_makerV2(URL):
+    #get url link here
+    html = {}
+    response = requests.get(URL)
+    source = response.text
+    soup = BeautifulSoup(source, 'html.parser')
+    qname =  soup.find('title').text
+    qname, sep, tail = qname.partition('|')
+    body = soup.find('body')
+    problem = body.find('div',{'class':'primary-colum-width-left'}).text
+    n = len(problem)
+    x = slice(515,n)
+    problem = problem[x]
+    problem, sep, tail = problem.partition('Author')
+    html = "<h2>" + qname + "</h2>" + "<pre>" + problem + "</pre>"
+    html = html.replace("### Input","<h2>Input</h2>")
+    html = html.replace("### Output","<h2>Input</h2>")
+    html = html.replace("### Constraints","<h2>Constraints</h2>")
+    html = html.replace("### Subtasks","<h2>Subtasks</h2>")
+    html = html.replace("### Explanation","<h2>Explanation</h2>")
+    html = html.replace("### Example Input","<h2>Example Input</h2>")
+    html = html.replace("### Example Output","<h2>Example Output</h2>")
+    html = html.replace("\le","<=")
+    html = html.replace("\ldots","...")
+    html = html.replace("*","")
+    html = html.replace("\cdot","*")
+    html = html.replace("\sum","Summation")
+    html = html.replace("$","")
+    return html
 
 def output_maker():
     #get solution file here
@@ -36,7 +68,12 @@ def output_maker():
 @app.route('/', methods=['POST','GET'])
 def main():
     url = request.json['url']
-    response = html_maker(url)
+    if "codeforces" in url:
+        response = html_maker(url)
+    elif "codechef" in url:
+        response = html_makerV2(url)
+    else:
+        response = {"html":{}}
     #output_maker()
     return response
 
